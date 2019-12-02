@@ -16,10 +16,11 @@ import {
   PrimaryButton,
   SearchBox,
   FontClassNames,
+  ProgressIndicator,
 } from 'office-ui-fabric-react'
 import { api } from 'internal/ky'
 import { Card } from '@uifabric/react-cards'
-import { AppWrapper } from 'internal/AppWrapper'
+import { AppBody } from 'internal/AppWrapper'
 import { Formik, Field, Form } from 'formik'
 import { FormikTextField } from 'formik-office-ui-fabric-react'
 import iziToast from 'izitoast'
@@ -27,57 +28,51 @@ import iziToast from 'izitoast'
 const theme = getTheme()
 const { palette, fonts } = theme
 
-const previewPropsUsingIcon: IDocumentCardPreviewProps = {
-  previewImages: [
-    {
-      previewIconProps: { iconName: 'WordDocument', styles: { root: { fontSize: fonts.superLarge.fontSize, color: palette.white } } },
-      width: 144,
-    },
-  ],
-  styles: { previewIcon: { backgroundColor: palette.themePrimary } },
-}
-
 class AutoForm extends React.Component<{ selected: any }, any> {
-  public state: any = { loading: false, currentFilling: {} }
+  public state: any = { loading: false, loadingFilling: false, currentFilling: {} }
 
   public componentWillReceiveProps(nextProps: any) {
     if (nextProps.selected && nextProps.selected._id) {
       let query = new URLSearchParams()
       query.set('documentID', nextProps.selected._id)
+      this.setState({ loadingFilling: true })
       api
         .get('filling/getByDocumentID', { searchParams: query })
         .json()
-        .then(({ data }: any) => this.setState({ currentFilling: data[0] || {} }))
+        .then(({ data }: any) => {
+          this.setState({ currentFilling: data[0] || {} })
+          this.setState({ loadingFilling: false })
+        })
     }
-  }
-
-  private async _onUpdateForm(values: any) {
-    this.setState({ loading: true })
   }
 
   public render(): JSX.Element {
     const { selected } = this.props
-    const { currentFilling } = this.state
+    const { currentFilling, loadingFilling } = this.state
 
     if (!selected) return <>Loading...</>
     if (!currentFilling) return <>Loading...</>
     let fields = currentFilling.fields || []
 
     return (
-      <Card tokens={{ childrenMargin: 30, width: '100%', maxWidth: '100%' }} styles={{ root: { marginLeft: 20 } }}>
+      <Card tokens={{ childrenMargin: 30, width: '90%', maxWidth: '90%' }} styles={{ root: { marginLeft: 20 } }}>
         <Card.Section>
           <h1 className={FontClassNames.large}>Bạn đang chọn: {selected.name}</h1>
         </Card.Section>
         <Card.Section>
           <Formik
-            initialValues={(selected.fields as any[]).reduce(
-              (a, b) => {
-                let field = fields.find((v: any) => v && v.key === b.key)
-                a[b.key] = field ? field.value : ''
-                return a
-              },
-              {} as any,
-            )}
+            enableReinitialize={true}
+            initialValues={{
+              ...(selected.fields as any[]).reduce(
+                (a, b) => {
+                  let field = fields.find((v: any) => v && v.key === b.key)
+                  a[b.key] = field ? field.value : ''
+                  return a
+                },
+                {} as any,
+              ),
+              id: selected._id,
+            }}
             onSubmit={values => {
               this.setState({ loading: true })
               api
@@ -96,6 +91,7 @@ class AutoForm extends React.Component<{ selected: any }, any> {
             }}
           >
             {props => {
+              if (loadingFilling) return <ProgressIndicator />
               const fields = selected.fields.map((field: any) => {
                 return (
                   <Stack.Item key={field._id}>
@@ -109,13 +105,34 @@ class AutoForm extends React.Component<{ selected: any }, any> {
                     <Stack tokens={{ childrenGap: '20 0' }}>
                       {fields}
                       <Stack.Item>
-                        <PrimaryButton disabled={this.state.loading} type='submit' text='Nhập thông tin' />
-                        <PrimaryButton
-                          disabled={this.state.loading}
-                          type='button'
-                          onClick={() => this._onUpdateForm(props.values)}
-                          text='Cập nhật'
-                        />
+                        {!currentFilling._id && (
+                          <PrimaryButton
+                            disabled={this.state.loading}
+                            styles={{ root: { marginRight: '3px' } }}
+                            type='submit'
+                            text='Nhập thông tin'
+                          />
+                        )}
+                        {currentFilling._id && (
+                          <PrimaryButton
+                            disabled={this.state.loading}
+                            type='button'
+                            onClick={async () => {
+                              this.setState({ loading: true })
+                              await api.post('filling/update', {
+                                json: {
+                                  fillingID: currentFilling._id,
+                                  fields: Object.keys(props.values).map(v => ({ key: v, value: props.values[v] })),
+                                },
+                              })
+
+                              iziToast.info({ message: 'Cập nhật thành công!!' })
+
+                              this.setState({ loading: false })
+                            }}
+                            text='Cập nhật'
+                          />
+                        )}
                       </Stack.Item>
                     </Stack>
                   </Form>
@@ -153,6 +170,26 @@ function DocumentList(props: any) {
     ? docs.filter((v: any) => v.name.toLowerCase().includes(filterText.trim().toLowerCase()))
     : docs
   ).map((doc: any) => {
+    const previewPropsUsingIcon: IDocumentCardPreviewProps = {
+      previewImages: [
+        {
+          previewIconProps: {
+            iconName: 'WordDocument',
+            styles: {
+              root: {
+                fontSize: fonts.superLarge.fontSize,
+                color: selected && selected._id === doc._id ? palette.white : palette.themePrimary,
+              },
+            },
+          },
+          width: 144,
+        },
+      ],
+      styles: {
+        previewIcon: { backgroundColor: selected && selected._id === doc._id ? palette.themePrimary : palette.white },
+      },
+    }
+
     return (
       <DocumentCard
         key={doc._id}
@@ -174,7 +211,7 @@ function DocumentList(props: any) {
   })
 
   return (
-    <Stack tokens={{ childrenGap: 5, padding: '0 40px' }} horizontal>
+    <Stack tokens={{ childrenGap: 5 }} horizontal>
       <Stack grow={1}>
         <SearchBox
           styles={{ root: { marginBottom: 10 } }}
@@ -202,9 +239,9 @@ export const DocumentRoute = () => {
   return (
     <>
       <AppHeader />
-      <AppWrapper>
+      <AppBody>
         <DocumentList />
-      </AppWrapper>
+      </AppBody>
     </>
   )
 }

@@ -9,4 +9,5 @@ const accountsRest = new RestClient({
 const accountsClient = new AccountsClient({}, accountsRest)
 const accountsPassword = new AccountsClientPassword(accountsClient)
 
+// accountsPassword.createUser({ username: 'ducan', password: 'ducan123' })
 export { accountsClient, accountsRest, accountsPassword }

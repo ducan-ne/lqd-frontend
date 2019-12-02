@@ -134,13 +134,15 @@ export const HeaderComponent: React.StatelessComponent<IHeaderProps> = styled<IH
 
 export const AppHeader = () => (
   <HeaderComponent
-    title='Lê Quý Đôn'
-    sideLinks={[
-      {
-        url: '/docs',
-        name: 'Danh sách văn bản',
-      },
-    ]}
+    title='Trường THPT Chuyên Lê Quý Đôn - Khánh Hòa'
+    sideLinks={
+      [
+        // {
+        //   url: '/docs',
+        //   name: 'Danh sách văn bản',
+        // },
+      ]
+    }
     isMenuVisible={true}
   />
 )

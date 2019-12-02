@@ -30,7 +30,6 @@ export const getStyles: IStyleFunction<IHeaderStyleProps, IHeaderStyles> = props
         padding: isLargeDown ? 0 : '0 20px',
         backgroundColor: '#272630',
         overflow: 'hidden',
-        marginTop: '5px',
         whiteSpace: 'no-wrap',
         userSelect: 'none',
         color: 'white',
