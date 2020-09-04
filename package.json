@@ -24,7 +24,7 @@
     "izitoast": "^1.4.0",
     "ky": "^0.15.0",
     "lodash": "^4.17.15",
-    "node-sass": "^4.13.0",
+    "node-sass": "^4.13.1",
     "office-ui-fabric-react": "^7.59.3",
     "react": "^16.11.0",
     "react-dom": "^16.11.0",
