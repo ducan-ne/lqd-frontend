@@ -23,7 +23,7 @@
     "formik-office-ui-fabric-react": "^1.0.0",
     "izitoast": "^1.4.0",
     "ky": "^0.15.0",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.21",
     "node-sass": "^4.13.0",
     "office-ui-fabric-react": "^7.59.3",
     "react": "^16.11.0",
